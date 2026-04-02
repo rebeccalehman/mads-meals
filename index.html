@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Meal Train for Mads</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf7f2;
+    --warm-white: #fff9f4;
+    --blush: #f5e6da;
+    --blush-dark: #e8c9b0;
+    --sage: #8faa8b;
+    --sage-dark: #5e7a5a;
+    --sage-light: #deeadc;
+    --text: #3a2e28;
+    --text-mid: #7a6458;
+    --text-light: #b09a8e;
+    --border: #e8ddd5;
+    --open: #fff9f4;
+  }
+
+  html { background: var(--cream); }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 3rem;
+  }
+
+  .hero {
+    background: var(--blush);
+    padding: 2.5rem 1.25rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--blush-dark);
+  }
+
+  .hero-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .hero h1 {
+    font-family: 'Lora', serif;
+    font-size: 1.75rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+    line-height: 1.2;
+  }
+
+  .hero p {
+    font-size: 0.9rem;
+    color: var(--text-mid);
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0 auto;
+    font-style: italic;
+    font-family: 'Lora', serif;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    background: var(--warm-white);
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.4rem; font-weight: 500; color: var(--text); line-height: 1; }
+  .stat-label { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+
+  .month-block { padding: 1.25rem 1rem 0; max-width: 480px; margin: 0 auto; }
+
+  .month-title {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-mid);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 1.5rem;
+  }
+
+  .day-hdr {
+    font-size: 0.6rem;
+    text-align: center;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 0;
+  }
+
+  .day {
+    border-radius: 8px;
+    min-height: 52px;
+    padding: 5px 4px 4px;
+    border: 1px solid var(--border);
+    background: var(--open);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s;
+    position: relative;
+  }
+
+  .day:active { transform: scale(0.96); }
+
+  .day.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+  .day.inactive { background: transparent; border-color: transparent; cursor: default; pointer-events: none; opacity: 0; }
+
+  .day.claimed {
+    background: var(--sage-light);
+    border-color: var(--sage);
+    cursor: pointer;
+  }
+
+  .day-num {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-light);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .day.claimed .day-num { color: var(--sage-dark); }
+
+  .day-name {
+    font-size: 0.65rem;
+    color: var(--sage-dark);
+    font-weight: 500;
+    line-height: 1.3;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .day-meal {
+    font-size: 0.58rem;
+    color: var(--sage-dark);
+    opacity: 0.8;
+    margin-top: 2px;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .day-open-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--blush-dark);
+    margin: 6px auto 0;
+  }
+
+  /* Modal */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(58,46,40,0.45);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: var(--warm-white);
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem 1.25rem 2.5rem;
+    width: 100%;
+    max-width: 480px;
+    animation: slideup 0.22s ease;
+  }
+
+  @keyframes slideup {
+    from { transform: translateY(60px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 1.25rem;
+  }
+
+  .modal-date {
+    font-family: 'Lora', serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+  }
+
+  .modal-sub {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 1.25rem;
+  }
+
+  .field { margin-bottom: 0.75rem; }
+
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-mid);
+    margin-bottom: 5px;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    color: var(--text);
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus { border-color: var(--sage); }
+  .field input::placeholder { color: var(--text-light); }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 1rem; }
+
+  .btn {
+    flex: 1;
+    padding: 0.85rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-cancel {
+    background: var(--blush);
+    color: var(--text-mid);
+  }
+
+  .btn-claim {
+    background: var(--sage);
+    color: white;
+  }
+
+  .btn-unclaim {
+    background: #f0e0d8;
+    color: #a0685a;
+    flex: 0.6;
+  }
+
+  .claimed-info {
+    background: var(--sage-light);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--sage-dark);
+    display: none;
+  }
+
+  .claimed-info.visible { display: block; }
+  .claimed-info strong { display: block; font-weight: 500; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="hero-icon">🍼</span>
+  <h1>Meal train for Mads</h1>
+  <p>Hi everyone — please feel free to share yummy foods with our newest mama and her family!</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num" id="s-claimed">0</div><div class="stat-label">Claimed</div></div>
+  <div class="stat"><div class="stat-num" id="s-open">0</div><div class="stat-label">Open</div></div>
+  <div class="stat"><div class="stat-num" id="s-total">0</div><div class="stat-label">Total days</div></div>
+</div>
+
+<div id="calendar"></div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-date" id="m-date"></div>
+    <div class="modal-sub" id="m-sub"></div>
+    <div class="claimed-info" id="m-claimed-info">
+      <strong id="m-claimed-name"></strong>
+      <span id="m-claimed-meal"></span>
+    </div>
+    <div id="m-form">
+      <div class="field">
+        <label>Your name</label>
+        <input id="m-name" type="text" placeholder="e.g. Sarah" autocomplete="given-name" />
+      </div>
+      <div class="field">
+        <label>What are you bringing?</label>
+        <input id="m-meal" type="text" placeholder="e.g. chicken soup, lasagna..." />
+      </div>
+    </div>
+    <div class="btn-row" id="m-btns"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'mads_meal_train_v1';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOWS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let slots = {};
+let selectedKey = null;
+
+function load() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) slots = JSON.parse(s); } catch(e) {}
+  render();
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(slots)); } catch(e) {}
+}
+
+function dk(y,m,d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+function inRange(y,m,d) {
+  const dt = new Date(y,m,d);
+  return dt >= new Date(2026,3,6) && dt <= new Date(2026,4,31);
+}
+
+function formatDate(key) {
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${DOWS[dt.getDay()]}, ${MONTHS[m-1]} ${d}`;
+}
+
+function render() {
+  const configs = [{y:2026,m:3},{y:2026,m:4}];
+  let html = '';
+  let total=0, claimed=0;
+
+  configs.forEach(({y,m}) => {
+    html += `<div class="month-block"><div class="month-title">${MONTHS[m]} ${y}</div><div class="cal-grid">`;
+    DOWS.forEach(d => { html += `<div class="day-hdr">${d}</div>`; });
+    const firstDow = new Date(y,m,1).getDay();
+    const daysInMonth = new Date(y,m+1,0).getDate();
+    for(let i=0;i<firstDow;i++) html += '<div class="day empty"></div>';
+    for(let d=1;d<=daysInMonth;d++){
+      if(!inRange(y,m,d)){ html += '<div class="day inactive"></div>'; continue; }
+      const key = dk(y,m,d);
+      total++;
+      const s = slots[key];
+      if(s){
+        claimed++;
+        html += `<div class="day claimed" onclick="openModal('${key}')">
+          <span class="day-num">${d}</span>
+          <div class="day-name">${esc(s.name)}</div>
+          ${s.meal ? `<div class="day-meal">${esc(s.meal)}</div>` : ''}
+        </div>`;
+      } else {
+        html += `<div class="day" onclick="openModal('${key}')">
+          <span class="day-num">${d}</span>
+          <div class="day-open-dot"></div>
+        </div>`;
+      }
+    }
+    const tail = (firstDow + daysInMonth) % 7;
+    if(tail>0) for(let i=tail;i<7;i++) html += '<div class="day empty"></div>';
+    html += '</div></div>';
+  });
+
+  document.getElementById('calendar').innerHTML = html;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-claimed').textContent = claimed;
+  document.getElementById('s-open').textContent = total - claimed;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function openModal(key){
+  selectedKey = key;
+  const s = slots[key];
+  document.getElementById('m-date').textContent = formatDate(key);
+
+  const ci = document.getElementById('m-claimed-info');
+  const form = document.getElementById('m-form');
+  const btns = document.getElementById('m-btns');
+
+  if(s){
+    document.getElementById('m-sub').textContent = 'This day is taken — see details below.';
+    document.getElementById('m-claimed-name').textContent = s.name;
+    document.getElementById('m-claimed-meal').textContent = s.meal || '';
+    ci.classList.add('visible');
+    form.style.display = 'none';
+    btns.innerHTML = `
+      <button class="btn btn-cancel" onclick="closeModal()">Close</button>
+      <button class="btn btn-unclaim" onclick="unclaim()">Remove</button>`;
+  } else {
+    document.getElementById('m-sub').textContent = 'Sign up to bring a meal on this day.';
+    ci.classList.remove('visible');
+    form.style.display = 'block';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-meal').value = '';
+    btns.innerHTML = `
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-claim" onclick="claim()">Claim this day</button>`;
+    setTimeout(()=>document.getElementById('m-name').focus(), 300);
+  }
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+  selectedKey = null;
+}
+
+function handleOverlayClick(e){
+  if(e.target === document.getElementById('overlay')) closeModal();
+}
+
+function claim(){
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){ document.getElementById('m-name').focus(); return; }
+  const meal = document.getElementById('m-meal').value.trim();
+  slots[selectedKey] = { name, meal };
+  save(); closeModal(); render();
+}
+
+function unclaim(){
+  delete slots[selectedKey];
+  save(); closeModal(); render();
+}
+
+load();
+</script>
+</body>
+</html>
