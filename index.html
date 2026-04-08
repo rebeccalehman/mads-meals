@@ -212,6 +212,32 @@
     margin-bottom: 1.25rem;
   }
 
+  .type-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+
+  .type-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .type-btn.active {
+    background: var(--sage-light);
+    border-color: var(--sage);
+    color: var(--sage-dark);
+  }
+
   .field { margin-bottom: 0.75rem; }
 
   .field label {
@@ -296,6 +322,9 @@
   <span class="hero-icon">🍼</span>
   <h1>Meal train for Mads</h1>
   <p>Hi everyone — please feel free to share yummy foods with our newest mama and her family!</p>
+  <p style="margin-top: 0.4rem; font-style: italic; font-size: 0.85rem; color: var(--text-light);">¡Hola a todos! Compartan comida deliciosa con nuestra nueva mamá y su familia.</p>
+  <p style="margin-top: 0.75rem; font-style: normal; font-size: 0.85rem;">📍 Amsterdam 27, Depa 401 — Ramon is the doorman / Ramon es el portero.</p>
+  <p style="margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-light);">Please text Mads to confirm and let her know when you're on your way! / ¡Por favor avísale a Mads para confirmar y cuando vayas en camino!</p>
 </div>
 
 <div class="stats-bar">
@@ -318,11 +347,15 @@
     <div id="m-form">
       <div class="field">
         <label>Your name</label>
-        <input id="m-name" type="text" placeholder="e.g. Sarah" autocomplete="given-name" />
+        <input id="m-name" type="text" placeholder="e.g. Dan" autocomplete="given-name" />
       </div>
-      <div class="field">
-        <label>What are you bringing?</label>
-        <input id="m-meal" type="text" placeholder="e.g. chicken soup, lasagna..." />
+      <div class="type-toggle">
+        <button class="type-btn active" id="btn-homemade" onclick="setType('homemade')">🍽 Bringing food</button>
+        <button class="type-btn" id="btn-doordash" onclick="setType('doordash')">🛵 Sending DoorDash</button>
+      </div>
+      <div class="field" id="meal-field">
+        <label id="meal-label">What are you bringing?</label>
+        <input id="m-meal" type="text" placeholder="e.g. enchiladas..." />
       </div>
     </div>
     <div class="btn-row" id="m-btns"></div>
@@ -388,7 +421,7 @@ function dk(y, m, d) {
 
 function inRange(y, m, d) {
   const dt = new Date(y, m, d);
-  return dt >= new Date(2026, 3, 6) && dt <= new Date(2026, 4, 31);
+  return dt >= new Date(2026, 3, 6) && dt <= new Date(2026, 3, 30);
 }
 
 function formatDate(key) {
@@ -403,7 +436,7 @@ function esc(s) {
 }
 
 function render() {
-  const configs = [{y:2026,m:3},{y:2026,m:4}];
+  const configs = [{y:2026,m:3}];
   let html = '';
   let total = 0, claimed = 0;
 
@@ -448,6 +481,28 @@ function render() {
   document.getElementById('s-open').textContent = total - claimed;
 }
 
+function setType(type) {
+  const homemadeBtn = document.getElementById('btn-homemade');
+  const doordashBtn = document.getElementById('btn-doordash');
+  const mealField = document.getElementById('meal-field');
+  const mealLabel = document.getElementById('meal-label');
+  const mealInput = document.getElementById('m-meal');
+
+  if (type === 'doordash') {
+    doordashBtn.classList.add('active');
+    homemadeBtn.classList.remove('active');
+    mealLabel.textContent = 'Any note? (optional)';
+    mealInput.placeholder = 'e.g. tacos from El Parnita...';
+    mealInput.dataset.type = 'doordash';
+  } else {
+    homemadeBtn.classList.add('active');
+    doordashBtn.classList.remove('active');
+    mealLabel.textContent = 'What are you bringing?';
+    mealInput.placeholder = 'e.g. enchiladas...';
+    mealInput.dataset.type = 'homemade';
+  }
+}
+
 function openModal(key) {
   selectedKey = key;
   const s = slots[key];
@@ -471,6 +526,7 @@ function openModal(key) {
     form.style.display = 'block';
     document.getElementById('m-name').value = '';
     document.getElementById('m-meal').value = '';
+    setType('homemade');
     btns.innerHTML = '<button class="btn btn-cancel" onclick="closeModal()">Cancel</button>'
       + '<button class="btn btn-claim" onclick="claim()">Claim this day</button>';
     setTimeout(function() { document.getElementById('m-name').focus(); }, 300);
@@ -491,7 +547,10 @@ function handleOverlayClick(e) {
 async function claim() {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { document.getElementById('m-name').focus(); return; }
-  const meal = document.getElementById('m-meal').value.trim();
+  const mealInput = document.getElementById('m-meal');
+  const isDoorDash = mealInput.dataset.type === 'doordash';
+  const mealNote = mealInput.value.trim();
+  const meal = isDoorDash ? ('🛵 DoorDash' + (mealNote ? ' — ' + mealNote : '')) : mealNote;
   slots[selectedKey] = { name: name, meal: meal };
   closeModal();
   render();
